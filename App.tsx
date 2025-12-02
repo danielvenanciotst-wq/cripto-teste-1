@@ -33,6 +33,9 @@ const App: React.FC = () => {
   const [history, setHistory] = useState<TradeHistory[]>([]);
   const [balance, setBalance] = useState(10000); // Default 10k USDT
   const [logs, setLogs] = useState<Log[]>([]);
+  
+  // Connection Status State
+  const [apiStatus, setApiStatus] = useState<'connected' | 'error' | 'connecting'>('connecting');
 
   // Engine Ref (persists across renders)
   const engineRef = useRef<TradingEngine | null>(null);
@@ -65,9 +68,11 @@ const App: React.FC = () => {
 
         if (engineRef.current && mappedPairs.length > 0) {
             engineRef.current.setMarketData(mappedPairs);
+            setApiStatus('connected');
         }
     } catch (error) {
-        console.error("Erro ao buscar preços Gate.io:", error);
+        console.error("Erro ao buscar preços Gate.io (provável CORS ou erro de rede):", error);
+        setApiStatus('error');
     }
   };
 
@@ -170,10 +175,27 @@ const App: React.FC = () => {
          <div className="space-y-8">
             <div className="flex justify-between items-center">
                 <h2 className="text-2xl font-bold text-white">Monitoramento Ao Vivo</h2>
-                <div className="flex items-center gap-2 text-xs bg-dark-700 px-3 py-1 rounded-full text-blue-400 border border-blue-500/20">
-                   <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></div>
-                   Gate.io Spot API (Feed Real)
-                </div>
+                
+                {apiStatus === 'connected' && (
+                  <div className="flex items-center gap-2 text-xs bg-dark-700 px-3 py-1 rounded-full text-blue-400 border border-blue-500/20">
+                     <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></div>
+                     Gate.io Spot API (Feed Real)
+                  </div>
+                )}
+                
+                {apiStatus === 'error' && (
+                  <div className="flex items-center gap-2 text-xs bg-red-900/20 px-3 py-1 rounded-full text-red-400 border border-red-500/20" title="O navegador pode estar bloqueando a conexão direta (CORS). Dados simulados em uso.">
+                     <div className="w-2 h-2 rounded-full bg-red-500"></div>
+                     API Error (Dados Fallback)
+                  </div>
+                )}
+
+                {apiStatus === 'connecting' && (
+                  <div className="flex items-center gap-2 text-xs bg-dark-700 px-3 py-1 rounded-full text-yellow-400 border border-yellow-500/20">
+                     <div className="w-2 h-2 rounded-full bg-yellow-500 animate-bounce"></div>
+                     Conectando...
+                  </div>
+                )}
             </div>
 
             {/* Active Positions Section */}
